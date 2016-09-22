@@ -20,25 +20,33 @@
                  :error-handler error-handler})))
 
 (defn get-data-from-server [pred]
+  (js/console.log @pred)
   (ajax/GET (str "http://192.168.0.117:8080/json/searchhotels.json"
-                 "?star=" pred)
+                 "?star=" @pred)
             {:response-format :json
              :keywords? true
              :handler success-handler
              :error-handler error-handler}))
 
+#_(do (re-frame/dispatch
+       [:set-star-rating
+        (-> % .-target .-checked)])
+      (get-data-from-server
+       @(re-frame/subscribe [:star-rating])
+       #_(-> % .-target .-checked)))
+
 (defn starrating []
-  (reagent/create-class
-   {:reagent-render
+  (let [star (re-frame/subscribe [:star-rating])]
     (fn []
       [:div
        [:input {:type "checkbox"
-                :on-click #(do (re-frame/dispatch
-                                [:set-star-rating
-                                 (-> % .-target .-checked)])
-                               (get-data-from-server
-                                @(re-frame/subscribe [:star-rating])
-                                #_ (-> % .-target .-checked)))}]])}))
+                :on-click (fn [e]
+                            (re-frame/dispatch
+                             [:set-star-rating
+                              (-> e .-target .-checked)])
+                            (reagent/flush)
+                            (get-data-from-server star))}]])))
+
 
 (defn display []
   (let [data (re-frame/subscribe [:data])]
